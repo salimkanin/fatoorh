@@ -130,7 +130,7 @@ button.small{padding:7px 10px;font-size:13px}
 
       <div class="field">
         <label for="الكمية">الكمية</label>
-        <input id="الكمية" type="text" inputmode="decimal" placeholder="100 مل" autocomplete="off">
+        <input id="الكمية" type="text" inputmode="decimal" placeholder="100" autocomplete="off">
       </div>
 
       <div class="field">
@@ -147,6 +147,7 @@ button.small{padding:7px 10px;font-size:13px}
     <div class="notice">
       يمكنك إضافة عدة طلبات للشخص نفسه، وسيتم تجميعها تلقائيًا في صف واحد.
       البيانات تحفظ تلقائيًا داخل المتصفح.
+      سيتم إضافة "مل" تلقائيًا بعد الكمية.
     </div>
   </section>
 
@@ -237,6 +238,17 @@ function هروب_النص(نص){
     .replaceAll("'","&#039;");
 }
 
+// ✅ دالة جديدة: تُنسّق الكمية بإضافة "مل" تلقائيًا إذا لم تكن موجودة
+function تنسيق_الكمية(كمية){
+  const نص = String(كمية || "").trim();
+  if(!نص) return "";
+  // إذا كان المستخدم قد كتب "مل" أو أي وحدة قياس أخرى، لا نضيف شيئًا
+  if(/مل|جرام|جم|كجم|لتر|ل|قطعة|حبة|علبة|كرتون|كيس|متر|سم/i.test(نص)) {
+    return نص;
+  }
+  return نص + " مل";
+}
+
 function تجميع_البيانات(){
   const خريطة = new Map();
 
@@ -265,7 +277,8 @@ function عرض_الجدول(){
     الإجمالي += شخص.مجموع;
 
     const الطلبات = شخص.طلبات.map(طلب => {
-      const كمية = طلب.الكمية ? " " + هروب_النص(طلب.الكمية) : "";
+      // ✅ استخدام تنسيق_الكمية الجديد
+      const كمية = طلب.الكمية ? " " + هروب_النص(تنسيق_الكمية(طلب.الكمية)) : "";
       return `
         <div>
           ${هروب_النص(طلب.الطلب)}${كمية}
@@ -297,7 +310,6 @@ function عرض_الجدول(){
   جدول_النتائج.innerHTML = html;
 }
 
-// ✅ تم إصلاح: إزالة الإسناد الضمني غير المعلن
 function إضافة_طلب(){
   const الشخص = اسم_الشخص.value.trim();
   const الطلب = اسم_الطلب.value.trim();
@@ -338,7 +350,6 @@ function إضافة_طلب(){
   اسم_الطلب.focus();
 }
 
-// ✅ تم تحسين: حساب parseFloat مرة واحدة فقط
 function سعر_غير_صالح(قيمة){
   const نص = String(قيمة).replace(",", ".");
   if(نص === "") return true;
@@ -415,7 +426,6 @@ function حذف_الكل(){
   }
 }
 
-// ✅ تم تحسين: قص النص الطويل بدل خروجه عن الحدود
 function قص_النص(ctx, نص, الحد_الأقصى){
   نص = String(نص);
   if(ctx.measureText(نص).width <= الحد_الأقصى) return نص;
@@ -480,8 +490,9 @@ function حفظ_كصورة(){
     ctx.fillText(قص_النص(ctx, صف.الاسم, 380), 1100, y+60);
 
     ctx.textAlign = "center";
+    // ✅ استخدام تنسيق_الكمية في الصورة أيضًا
     const نص_الطلبات = صف.شخص.طلبات.map(x =>
-      x.الطلب + (x.الكمية ? " " + x.الكمية : "")
+      x.الطلب + (x.الكمية ? " " + تنسيق_الكمية(x.الكمية) : "")
     );
 
     نص_الطلبات.slice(0,2).forEach((نص,j)=>{
@@ -532,8 +543,9 @@ function حفظ_PDF(){
 
   خريطة.forEach((شخص, الاسم) => {
     الإجمالي += شخص.مجموع;
+    // ✅ استخدام تنسيق_الكمية في PDF أيضًا
     const الطلبات = شخص.طلبات.map(x =>
-      `${هروب_النص(x.الطلب)}${x.الكمية ? " " + هروب_النص(x.الكمية) : ""}`
+      `${هروب_النص(x.الطلب)}${x.الكمية ? " " + هروب_النص(تنسيق_الكمية(x.الكمية)) : ""}`
     ).join(" + ");
 
     rows += `<tr>
@@ -585,12 +597,10 @@ document.getElementById("زر_pdf").addEventListener("click", حفظ_PDF);
 document.getElementById("زر_حفظ_التعديل").addEventListener("click", حفظ_التعديل);
 document.getElementById("زر_إلغاء_التعديل").addEventListener("click", إغلاق_التعديل);
 
-// ✅ تم تحسين: إغلاق نافذة التعديل عند النقر على الخلفية
 document.getElementById("نافذة_تعديل").addEventListener("click", function(e){
   if(e.target === this) إغلاق_التعديل();
 });
 
-// ✅ تم تحسين: إغلاق النافذة بزر Escape
 document.addEventListener("keydown", function(e){
   if(e.key === "Escape" && رقم_التعديل >= 0) إغلاق_التعديل();
 });
