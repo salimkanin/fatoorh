@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>كشف الطلبات</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:#000;color:#fff;font-family:"Tajawal",Arial,sans-serif}
+body{min-height:100vh;padding:18px 12px 40px}
+button,input,select{font-family:inherit}
+.container{width:min(1050px,100%);margin:auto}
+h1{text-align:center;font-size:27px;margin:4px 0 18px;font-weight:700}
+
+.panel{
+  background:#101010;border:1px solid #292929;border-radius:14px;
+  padding:16px;margin-bottom:18px;
+}
+.panel-title{font-size:19px;font-weight:700;margin-bottom:13px}
+.grid{
+  display:grid;grid-template-columns:1.1fr 2fr .8fr .8fr;
+  gap:9px
+}
+input{
+  width:100%;background:#050505;color:#fff;border:1px solid #3a3a3a;
+  border-radius:9px;padding:12px 11px;font-size:16px;outline:none
+}
+input:focus{border-color:#777}
+label{font-size:13px;color:#aaa;margin:0 0 5px;display:block}
+.field{min-width:0}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:11px}
+button{
+  border:1px solid #444;background:#222;color:#fff;border-radius:9px;
+  padding:11px 15px;font-size:15px;cursor:pointer
+}
+button:hover{background:#303030}
+button.primary{background:#fff;color:#000;border-color:#fff;font-weight:700}
+button.danger{background:#190909;border-color:#5a2020}
+button.small{padding:7px 10px;font-size:13px}
+
+.notice{color:#aaa;font-size:13px;margin-top:9px;line-height:1.7}
+
+.result-wrap{overflow-x:auto}
+.result{
+  width:100%;border-collapse:collapse;table-layout:fixed;
+  background:#000;direction:rtl
+}
+.result th,.result td{
+  border-bottom:1px solid #222;padding:18px 12px;vertical-align:middle
+}
+.result th{font-size:23px;font-weight:700}
+.result td{font-size:21px}
+.result th:nth-child(1),.result td:nth-child(1){width:22%;text-align:right}
+.result th:nth-child(2),.result td:nth-child(2){width:56%;text-align:center}
+.result th:nth-child(3),.result td:nth-child(3){width:22%;text-align:left}
+.orders{line-height:1.8;white-space:normal}
+.total-row td{border-bottom:0;padding-top:21px;font-weight:700;font-size:24px}
+.total-row td:nth-child(1){text-align:right}
+.total-row td:nth-child(2){text-align:center}
+.total-row td:nth-child(3){text-align:left}
+
+.empty{text-align:center!important;color:#777!important;padding:35px!important}
+.row-actions{margin-top:7px;display:flex;justify-content:center;gap:6px}
+.row-actions button{font-size:12px;padding:5px 8px}
+
+.bottom-actions{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-top:15px
+}
+.bottom-actions button{font-size:16px;font-weight:700}
+.footer{text-align:center;color:#555;font-size:12px;margin-top:18px}
+
+.modal-backdrop{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
+  align-items:center;justify-content:center;padding:15px;z-index:20
+}
+.modal{
+  width:min(430px,100%);background:#111;border:1px solid #333;
+  border-radius:14px;padding:17px
+}
+.modal h2{font-size:19px;margin:0 0 13px}
+.modal .field{margin-bottom:10px}
+.modal-actions{display:flex;gap:8px;margin-top:13px}
+.modal-actions button{flex:1}
+
+#capture{
+  background:#000;
+  padding:10px 0 15px;
+}
+.capture-title{display:none}
+
+@media(max-width:700px){
+  body{padding:10px 8px 28px}
+  h1{font-size:24px}
+  .panel{padding:13px}
+  .grid{grid-template-columns:1fr 1fr}
+  .grid .wide{grid-column:1/-1}
+  .result th,.result td{padding:15px 7px}
+  .result th{font-size:18px}
+  .result td{font-size:17px}
+  .total-row td{font-size:20px}
+  .bottom-actions{grid-template-columns:1fr}
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+  <h1>كشف الطلبات</h1>
+
+  <section class="panel">
+    <div class="panel-title">إضافة طلب</div>
+
+    <div class="grid">
+      <div class="field wide">
+        <label for="اسم_الشخص">اسم الشخص</label>
+        <input id="اسم_الشخص" type="text" placeholder="مثال: حسناء" autocomplete="off">
+      </div>
+
+      <div class="field wide">
+        <label for="اسم_الطلب">الطلب</label>
+        <input id="اسم_الطلب" type="text" placeholder="مثال: بخور الوشق" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label for="الكمية">الكمية</label>
+        <input id="الكمية" type="text" inputmode="decimal" placeholder="100 مل" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label for="السعر">السعر (ر.ع)</label>
+        <input id="السعر" type="number" step="0.001" min="0" placeholder="5.5">
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="primary" id="زر_إضافة">إضافة إلى الكشف</button>
+      <button id="زر_مسح_الحقول">مسح الحقول</button>
+    </div>
+
+    <div class="notice">
+      يمكنك إضافة عدة طلبات للشخص نفسه، وسيتم تجميعها تلقائيًا في صف واحد.
+      البيانات تحفظ تلقائيًا داخل المتصفح.
+    </div>
+  </section>
+
+  <section class="panel" id="capture">
+    <div class="capture-title">كشف الطلبات</div>
+
+    <div class="result-wrap">
+      <table class="result">
+        <thead>
+          <tr>
+            <th>الشخص</th>
+            <th>الطلبات</th>
+            <th>المجموع</th>
+          </tr>
+        </thead>
+        <tbody id="جدول_النتائج"></tbody>
+      </table>
+    </div>
+
+    <div class="bottom-actions">
+      <button class="primary" id="زر_الصورة">حفظ كصورة</button>
+      <button class="primary" id="زر_pdf">حفظ PDF</button>
+      <button class="danger" id="زر_حذف_الكل">حذف جميع البيانات</button>
+    </div>
+  </section>
+
+  <div class="footer">يعمل محليًا على الهاتف — البيانات محفوظة في المتصفح</div>
+</div>
+
+<div class="modal-backdrop" id="نافذة_تعديل">
+  <div class="modal">
+    <h2>تعديل الطلب</h2>
+
+    <div class="field">
+      <label for="تعديل_الطلب">الطلب</label>
+      <input id="تعديل_الطلب" type="text">
+    </div>
+
+    <div class="field">
+      <label for="تعديل_الكمية">الكمية</label>
+      <input id="تعديل_الكمية" type="text" inputmode="decimal">
+    </div>
+
+    <div class="field">
+      <label for="تعديل_السعر">السعر (ر.ع)</label>
+      <input id="تعديل_السعر" type="number" step="0.001" min="0">
+    </div>
+
+    <div class="modal-actions">
+      <button class="primary" id="زر_حفظ_التعديل">حفظ</button>
+      <button id="زر_إلغاء_التعديل">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+const مفتاح_التخزين = "كشف_الطلبات_نسخة_1";
+let البيانات = JSON.parse(localStorage.getItem(مفتاح_التخزين) || "[]");
+let رقم_التعديل = -1;
+
+const اسم_الشخص = document.getElementById("اسم_الشخص");
+const اسم_الطلب = document.getElementById("اسم_الطلب");
+const الكمية = document.getElementById("الكمية");
+const السعر = document.getElementById("السعر");
+const جدول_النتائج = document.getElementById("جدول_النتائج");
+
+function حفظ_البيانات(){
+  localStorage.setItem(مفتاح_التخزين, JSON.stringify(البيانات));
+}
+
+function رقم_صحيح(قيمة){
+  const n = parseFloat(String(قيمة).replace(",", "."));
+  return Number.isFinite(n) ? n : 0;
+}
+
+function تنسيق_رقم(n){
+  return Number(n).toFixed(3).replace(/\.?0+$/, "");
+}
+
+function هروب_النص(نص){
+  return String(نص)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+function تجميع_البيانات(){
+  const خريطة = new Map();
+
+  البيانات.forEach((طلب, index) => {
+    const اسم = طلب.الشخص.trim() || "بدون اسم";
+    if(!خريطة.has(اسم)) خريطة.set(اسم, {طلبات:[], مجموع:0});
+    خريطة.get(اسم).طلبات.push({...طلب, index});
+    خريطة.get(اسم).مجموع += رقم_صحيح(طلب.السعر);
+  });
+
+  return خريطة;
+}
+
+function عرض_الجدول(){
+  const خريطة = تجميع_البيانات();
+  let html = "";
+  let الإجمالي = 0;
+
+  if(!البيانات.length){
+    جدول_النتائج.innerHTML =
+      '<tr><td colspan="3" class="empty">لا توجد طلبات حتى الآن</td></tr>';
+    return;
+  }
+
+  خريطة.forEach((شخص, الاسم) => {
+    الإجمالي += شخص.مجموع;
+
+    const الطلبات = شخص.طلبات.map(طلب => {
+      const كمية = طلب.الكمية ? " " + هروب_النص(طلب.الكمية) : "";
+      return `
+        <div>
+          ${هروب_النص(طلب.الطلب)}${كمية}
+          <span style="color:#888;font-size:.8em">
+            (${تنسيق_رقم(طلب.السعر)} ر.ع)
+          </span>
+        </div>
+        <div class="row-actions">
+          <button class="small" onclick="تعديل_طلب(${طلب.index})">تعديل</button>
+          <button class="small" onclick="حذف_طلب(${طلب.index})">حذف</button>
+        </div>`;
+    }).join("");
+
+    html += `
+      <tr>
+        <td>${هروب_النص(الاسم)}</td>
+        <td class="orders">${الطلبات}</td>
+        <td>${تنسيق_رقم(شخص.مجموع)} ر.ع</td>
+      </tr>`;
+  });
+
+  html += `
+    <tr class="total-row">
+      <td>المجموع</td>
+      <td></td>
+      <td>${تنسيق_رقم(الإجمالي)} ر.ع</td>
+    </tr>`;
+
+  جدول_النتائج.innerHTML = html;
+}
+
+// ✅ تم إصلاح: إزالة الإسناد الضمني غير المعلن
+function إضافة_طلب(){
+  const الشخص = اسم_الشخص.value.trim();
+  const الطلب = اسم_الطلب.value.trim();
+  const الكمية_النص = الكمية.value.trim();
+  const السعر_الرقم = رقم_صحيح(السعر.value);
+
+  if(!الشخص){
+    alert("أدخل اسم الشخص.");
+    اسم_الشخص.focus();
+    return;
+  }
+
+  if(!الطلب){
+    alert("أدخل اسم الطلب.");
+    اسم_الطلب.focus();
+    return;
+  }
+
+  if(سعر_غير_صالح(السعر.value)){
+    alert("أدخل سعرًا صحيحًا.");
+    السعر.focus();
+    return;
+  }
+
+  البيانات.push({
+    الشخص,
+    الطلب,
+    الكمية: الكمية_النص,
+    السعر: السعر_الرقم
+  });
+
+  حفظ_البيانات();
+  عرض_الجدول();
+
+  اسم_الطلب.value = "";
+  الكمية.value = "";
+  السعر.value = "";
+  اسم_الطلب.focus();
+}
+
+// ✅ تم تحسين: حساب parseFloat مرة واحدة فقط
+function سعر_غير_صالح(قيمة){
+  const نص = String(قيمة).replace(",", ".");
+  if(نص === "") return true;
+  const رقم = parseFloat(نص);
+  return !Number.isFinite(رقم) || رقم < 0;
+}
+
+function مسح_الحقول(){
+  اسم_الطلب.value = "";
+  الكمية.value = "";
+  السعر.value = "";
+  اسم_الطلب.focus();
+}
+
+function حذف_طلب(index){
+  if(!confirm("هل تريد حذف هذا الطلب؟")) return;
+  البيانات.splice(index,1);
+  حفظ_البيانات();
+  عرض_الجدول();
+}
+
+function تعديل_طلب(index){
+  const طلب = البيانات[index];
+  if(!طلب) return;
+
+  رقم_التعديل = index;
+  document.getElementById("تعديل_الطلب").value = طلب.الطلب;
+  document.getElementById("تعديل_الكمية").value = طلب.الكمية;
+  document.getElementById("تعديل_السعر").value = طلب.السعر;
+  document.getElementById("نافذة_تعديل").style.display = "flex";
+}
+
+function إغلاق_التعديل(){
+  رقم_التعديل = -1;
+  document.getElementById("نافذة_تعديل").style.display = "none";
+}
+
+function حفظ_التعديل(){
+  if(رقم_التعديل < 0) return;
+
+  const الطلب = document.getElementById("تعديل_الطلب").value.trim();
+  const الكمية_الجديدة = document.getElementById("تعديل_الكمية").value.trim();
+  const السعر_الجديد = document.getElementById("تعديل_السعر").value;
+
+  if(!الطلب){
+    alert("أدخل اسم الطلب.");
+    return;
+  }
+
+  if(سعر_غير_صالح(السعر_الجديد)){
+    alert("أدخل سعرًا صحيحًا.");
+    return;
+  }
+
+  البيانات[رقم_التعديل].الطلب = الطلب;
+  البيانات[رقم_التعديل].الكمية = الكمية_الجديدة;
+  البيانات[رقم_التعديل].السعر = رقم_صحيح(السعر_الجديد);
+
+  حفظ_البيانات();
+  عرض_الجدول();
+  إغلاق_التعديل();
+}
+
+function حذف_الكل(){
+  if(!البيانات.length){
+    alert("لا توجد بيانات للحذف.");
+    return;
+  }
+
+  if(confirm("سيتم حذف جميع الطلبات من هذا الجهاز. هل أنت متأكد؟")){
+    البيانات = [];
+    حفظ_البيانات();
+    عرض_الجدول();
+  }
+}
+
+// ✅ تم تحسين: قص النص الطويل بدل خروجه عن الحدود
+function قص_النص(ctx, نص, الحد_الأقصى){
+  نص = String(نص);
+  if(ctx.measureText(نص).width <= الحد_الأقصى) return نص;
+  while(نص.length > 1 && ctx.measureText(نص + "…").width > الحد_الأقصى){
+    نص = نص.slice(0, -1);
+  }
+  return نص + "…";
+}
+
+function حفظ_كصورة(){
+  const خريطة = تجميع_البيانات();
+  if(!البيانات.length){
+    alert("أضف بيانات أولًا.");
+    return;
+  }
+
+  const عرض = 1200;
+  const صفوف = [];
+  let الإجمالي = 0;
+
+  خريطة.forEach((شخص, الاسم) => {
+    الإجمالي += شخص.مجموع;
+    صفوف.push({الاسم, شخص});
+  });
+
+  const ارتفاع_الرأس = 105;
+  const ارتفاع_الصف = 125;
+  const ارتفاع = ارتفاع_الرأس + صفوف.length * ارتفاع_الصف + 105;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = عرض;
+  canvas.height = ارتفاع;
+
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0,0,عرض,ارتفاع);
+
+  ctx.fillStyle = "#fff";
+  ctx.textBaseline = "middle";
+  ctx.font = "bold 34px Tajawal, Arial";
+  ctx.textAlign = "right";
+  ctx.fillText("الشخص", 1100, 55);
+  ctx.textAlign = "center";
+  ctx.fillText("الطلبات", 600, 55);
+  ctx.textAlign = "left";
+  ctx.fillText("المجموع", 100, 55);
+
+  ctx.strokeStyle = "#222";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(50,105); ctx.lineTo(1150,105); ctx.stroke();
+
+  صفوف.forEach((صف, i) => {
+    const y = 105 + i * ارتفاع_الصف;
+    ctx.strokeStyle = "#222";
+    ctx.beginPath();
+    ctx.moveTo(50,y+ارتفاع_الصف); ctx.lineTo(1150,y+ارتفاع_الصف); ctx.stroke();
+
+    ctx.fillStyle = "#fff";
+    ctx.font = "500 31px Tajawal, Arial";
+    ctx.textAlign = "right";
+    ctx.fillText(قص_النص(ctx, صف.الاسم, 380), 1100, y+60);
+
+    ctx.textAlign = "center";
+    const نص_الطلبات = صف.شخص.طلبات.map(x =>
+      x.الطلب + (x.الكمية ? " " + x.الكمية : "")
+    );
+
+    نص_الطلبات.slice(0,2).forEach((نص,j)=>{
+      ctx.fillText(قص_النص(ctx, نص, 620),600,y+43+j*39);
+    });
+
+    if(نص_الطلبات.length > 2){
+      ctx.font = "23px Tajawal, Arial";
+      ctx.fillStyle = "#aaa";
+      ctx.fillText("+" + (نص_الطلبات.length-2) + " طلبات أخرى",600,y+101);
+    }
+
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "left";
+    ctx.font = "500 31px Tajawal, Arial";
+    ctx.fillText(تنسيق_رقم(صف.شخص.مجموع) + " ر.ع",100,y+60);
+  });
+
+  const yTotal = 105 + صفوف.length * ارتفاع_الصف + 45;
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 34px Tajawal, Arial";
+  ctx.textAlign = "right";
+  ctx.fillText("المجموع",1100,yTotal);
+  ctx.textAlign = "left";
+  ctx.fillText(تنسيق_رقم(الإجمالي) + " ر.ع",100,yTotal);
+
+  const الرابط = document.createElement("a");
+  الرابط.download = "كشف-الطلبات.png";
+  الرابط.href = canvas.toDataURL("image/png");
+  الرابط.click();
+}
+
+function حفظ_PDF(){
+  if(!البيانات.length){
+    alert("أضف بيانات أولًا.");
+    return;
+  }
+
+  const نافذة = window.open("", "_blank");
+  if(!نافذة){
+    alert("المتصفح منع فتح نافذة PDF. اسمح بالنوافذ المنبثقة ثم حاول مرة أخرى.");
+    return;
+  }
+
+  const خريطة = تجميع_البيانات();
+  let الإجمالي = 0;
+  let rows = "";
+
+  خريطة.forEach((شخص, الاسم) => {
+    الإجمالي += شخص.مجموع;
+    const الطلبات = شخص.طلبات.map(x =>
+      `${هروب_النص(x.الطلب)}${x.الكمية ? " " + هروب_النص(x.الكمية) : ""}`
+    ).join(" + ");
+
+    rows += `<tr>
+      <td>${هروب_النص(الاسم)}</td>
+      <td>${الطلبات}</td>
+      <td>${تنسيق_رقم(شخص.مجموع)} ر.ع</td>
+    </tr>`;
+  });
+
+  rows += `<tr class="total"><td>المجموع</td><td></td><td>${تنسيق_رقم(الإجمالي)} ر.ع</td></tr>`;
+
+  نافذة.document.write(`
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>كشف الطلبات</title>
+<style>
+@page{size:A4;margin:12mm}
+body{background:#000;color:#fff;font-family:Arial,Tahoma,sans-serif;margin:0}
+h1{text-align:center;font-size:24px;margin:0 0 22px}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th,td{border-bottom:1px solid #333;padding:16px 9px;font-size:17px;vertical-align:middle}
+th{font-size:19px}
+th:nth-child(1),td:nth-child(1){width:22%;text-align:right}
+th:nth-child(2),td:nth-child(2){width:56%;text-align:center}
+th:nth-child(3),td:nth-child(3){width:22%;text-align:left}
+.total td{font-weight:bold;font-size:20px;border-bottom:0;padding-top:22px}
+@media print{body{background:#000!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style>
+</head>
+<body>
+<h1>كشف الطلبات</h1>
+<table>
+<thead><tr><th>الشخص</th><th>الطلبات</th><th>المجموع</th></tr></thead>
+<tbody>${rows}</tbody>
+</table>
+<script>window.onload=function(){setTimeout(function(){window.print()},500)}<\/script>
+</body>
+</html>`);
+  نافذة.document.close();
+}
+
+document.getElementById("زر_إضافة").addEventListener("click", إضافة_طلب);
+document.getElementById("زر_مسح_الحقول").addEventListener("click", مسح_الحقول);
+document.getElementById("زر_حذف_الكل").addEventListener("click", حذف_الكل);
+document.getElementById("زر_الصورة").addEventListener("click", حفظ_كصورة);
+document.getElementById("زر_pdf").addEventListener("click", حفظ_PDF);
+document.getElementById("زر_حفظ_التعديل").addEventListener("click", حفظ_التعديل);
+document.getElementById("زر_إلغاء_التعديل").addEventListener("click", إغلاق_التعديل);
+
+// ✅ تم تحسين: إغلاق نافذة التعديل عند النقر على الخلفية
+document.getElementById("نافذة_تعديل").addEventListener("click", function(e){
+  if(e.target === this) إغلاق_التعديل();
+});
+
+// ✅ تم تحسين: إغلاق النافذة بزر Escape
+document.addEventListener("keydown", function(e){
+  if(e.key === "Escape" && رقم_التعديل >= 0) إغلاق_التعديل();
+});
+
+[اسم_الشخص,اسم_الطلب,الكمية,السعر].forEach(عنصر=>{
+  عنصر.addEventListener("keydown", e=>{
+    if(e.key==="Enter") إضافة_طلب();
+  });
+});
+
+عرض_الجدول();
+</script>
+</body>
+</html>
